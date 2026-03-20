@@ -68,20 +68,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (fileToDelete && fileToDelete.name) {
                     try {
-                        const response = await fetch('/delete', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({filename: fileToDelete.name})
-                        });
+                        const imagesResponse = await fetch('/api/images');
+                        const imagesResult = await imagesResponse.json();
 
-                        const result = await response.json();
+                        if (imagesResult.success) {
+                            const imageRecord = imagesResult.images.find(img => img.filename === fileToDelete.name);
 
-                        if (result.success) {
-                            console.log('File deleted from server:', fileToDelete.name);
-                        } else {
-                            console.error('Failed to delete file from server:', result.message);
+                            if (imageRecord) {
+                                const deleteResponse = await fetch(`/api/images/${imageRecord.id}`, {
+                                    method: 'DELETE'
+                                });
+
+                                const deleteResult = await deleteResponse.json();
+
+                                if (deleteResult.success) {
+                                    console.log('File deleted from server:', fileToDelete.name);
+                                } else {
+                                    console.error('Failed to delete file from server:', deleteResult.message);
+                                }
+                            }
                         }
                     } catch (error) {
                         console.error('Error deleting file:', error);
