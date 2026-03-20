@@ -16,48 +16,61 @@ document.addEventListener('DOMContentLoaded', function () {
         imagesButton.addEventListener('click', () => window.location.href = '/images-list');
     }
 
-    const handleAndStoreFiles = (files) => {
-        if (!files || files.length === 0) return;
+    const showMessage = (message, isError = false) => {
+        let msgEl = document.querySelector('.upload__message');
+        if (!msgEl) {
+            msgEl = document.createElement('p');
+            msgEl.className = 'upload__message';
+            dropzone?.parentNode?.insertBefore(msgEl, dropzone.nextSibling);
+        }
+        msgEl.textContent = message;
+        msgEl.style.color = isError ? '#e53e3e' : '#38a169';
+    };
 
-        const storedFiles = JSON.parse(localStorage.getItem('uploadedImages')) || [];
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        const MAX_SIZE_BYTES = 5 * 1024 * 1024;
-        let filesAdded = false;
-        let lastFileName = '';
+    const uploadFile = async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
 
-        const getNextImageNumber = () => {
-            const imageFiles = storedFiles.filter(file => file.name.startsWith('image'));
-            return imageFiles.length + 1;
-        };
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
 
-        const getFileExtension = (filename) => {
-            return filename.substring(filename.lastIndexOf('.'));
-        };
+            const data = await response.json();
 
-        for (const file of files) {
-            if (allowedTypes.includes(file.type) && file.size <= MAX_SIZE_BYTES) {
-                const imageNumber = getNextImageNumber();
-                const autoName = `image${String(imageNumber).padStart(2, '0')}${getFileExtension(file.name)}`;
+            if (data.success) {
+                const storedFiles = JSON.parse(localStorage.getItem('uploadedImages')) || [];
+
+                const getNextImageNumber = () =>
+                    storedFiles.filter(f => f.name.startsWith('image')).length + 1;
+
+                const ext = file.name.substring(file.name.lastIndexOf('.'));
+                const autoName = `image${String(getNextImageNumber()).padStart(2, '0')}${ext}`;
 
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    const fileData = {
-                        name: autoName,
-                        originalName: file.name,
-                        url: event.target.result
-                    };
-                    storedFiles.push(fileData);
+                    storedFiles.push({name: autoName, originalName: file.name, url: event.target.result});
                     localStorage.setItem('uploadedImages', JSON.stringify(storedFiles));
                 };
                 reader.readAsDataURL(file);
-                filesAdded = true;
-                lastFileName = autoName;
-            }
-        }
 
-        if (filesAdded && currentUploadInput) {
-            currentUploadInput.value = `https://group6-image-hosting-server.com/${lastFileName}`;
-            alert("Files selected successfully! Go to the 'Images' tab to view them.");
+                if (currentUploadInput) {
+                    currentUploadInput.value = `https://group6-image-hosting-server.com/${autoName}`;
+                }
+                showMessage('File uploaded successfully!');
+            } else {
+                showMessage(data.message || 'Upload failed.', true);
+            }
+        } catch (err) {
+            showMessage('Something went wrong. Please try again.', true);
+        }
+    };
+
+    const handleAndStoreFiles = (files) => {
+        if (!files || files.length === 0) return;
+        for (const file of files) {
+            uploadFile(file);
         }
     };
 
