@@ -43,20 +43,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 const storedFiles = JSON.parse(localStorage.getItem('uploadedImages')) || [];
 
                 const getNextImageNumber = () =>
-                    storedFiles.filter(f => f.name.startsWith('image')).length + 1;
+                    storedFiles.filter(f => f.displayName && f.displayName.startsWith('image')).length + 1;
 
                 const ext = file.name.substring(file.name.lastIndexOf('.'));
-                const autoName = `image${String(getNextImageNumber()).padStart(2, '0')}${ext}`;
+                const displayName = `image${String(getNextImageNumber()).padStart(2, '0')}${ext}`;
 
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    storedFiles.push({name: autoName, originalName: file.name, url: event.target.result});
+                    storedFiles.push({
+                        name: data.filename,
+                        displayName: displayName,
+                        originalName: file.name,
+                        url: event.target.result
+                    });
                     localStorage.setItem('uploadedImages', JSON.stringify(storedFiles));
                 };
                 reader.readAsDataURL(file);
 
                 if (currentUploadInput) {
-                    currentUploadInput.value = `https://group6-image-hosting-server.com/${autoName}`;
+                    currentUploadInput.value = `https://group6-image-hosting-server.com/${data.filename}`;
                 }
                 showMessage('File uploaded successfully!');
             } else {

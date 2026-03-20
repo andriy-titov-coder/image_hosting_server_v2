@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="file-col file-col-name">
                     <span class="file-icon"><img src="/static/img/group.png" alt="file icon"></span>
                     ${fileData.url ? `<img src="${fileData.url}" alt="thumbnail">` : ''}
-                    <span class="file-name" title="${fileData.originalName || fileData.name}">${fileData.name}</span>
+                    <span class="file-name" title="${fileData.originalName || fileData.displayName || fileData.name}">${fileData.displayName || fileData.name}</span>
                 </div>
                 <div class="file-col file-col-url">https://group6-image-hosting-server.com/${fileData.name}</div>
                 <div class="file-col file-col-delete">
@@ -61,9 +61,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const addDeleteListeners = () => {
         document.querySelectorAll('.delete-btn').forEach(button => {
-            button.addEventListener('click', (event) => {
+            button.addEventListener('click', async (event) => {
                 const indexToDelete = parseInt(event.currentTarget.dataset.index);
                 let storedFiles = JSON.parse(localStorage.getItem('uploadedImages')) || [];
+                const fileToDelete = storedFiles[indexToDelete];
+
+                if (fileToDelete && fileToDelete.name) {
+                    try {
+                        const response = await fetch('/delete', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({filename: fileToDelete.name})
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            console.log('File deleted from server:', fileToDelete.name);
+                        } else {
+                            console.error('Failed to delete file from server:', result.message);
+                        }
+                    } catch (error) {
+                        console.error('Error deleting file:', error);
+                    }
+                }
+
                 storedFiles.splice(indexToDelete, 1);
                 localStorage.setItem('uploadedImages', JSON.stringify(storedFiles));
                 displayFiles();
