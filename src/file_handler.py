@@ -18,7 +18,7 @@ def save_file(file_data, filename):
     with open(filepath, 'wb') as f:
         f.write(file_data)
 
-    print(f"✅ File saved successfully: {unique_name}")
+    print(f"File saved successfully: {unique_name}")
     return unique_name
 
 
