@@ -1,3 +1,10 @@
+/**
+ * Скрипт сторінки завантаження зображень.
+ *
+ * Він обробляє вибір файлів, drag-and-drop, відправку на сервер,
+ * показ повідомлень, копіювання URL
+ * і збереження локальних даних про файли в localStorage.
+ */
 document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' || event.key === 'F5') {
@@ -16,6 +23,14 @@ document.addEventListener('DOMContentLoaded', function () {
         imagesButton.addEventListener('click', () => window.location.href = '/images-list');
     }
 
+    /**
+     * Показує повідомлення про успішну дію або помилку під формою завантаження.
+     *
+     * Якщо елемент повідомлення ще не створено, функція додає його в DOM.
+     *
+     * @param {string} message Текст повідомлення для користувача.
+     * @param {boolean} [isError=false] Ознака повідомлення про помилку.
+     */
     const showMessage = (message, isError = false) => {
         let msgEl = document.querySelector('.upload__message');
         if (!msgEl) {
@@ -27,6 +42,16 @@ document.addEventListener('DOMContentLoaded', function () {
         msgEl.style.color = isError ? '#e53e3e' : '#38a169';
     };
 
+    /**
+     * Завантажує один файл на сервер і в разі успіху
+     * зберігає його локальні метадані в localStorage.
+     *
+     * Після відповіді сервера формує displayName, читає файл через FileReader
+     * для локального preview і оновлює поле з URL поточного завантаження.
+     *
+     * @param {File} file Файл, який потрібно відправити на сервер.
+     * @returns {Promise<void>}
+     */
     const uploadFile = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -72,6 +97,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    /**
+     * Обробляє список вибраних або перетягнутих файлів.
+     *
+     * Якщо список не порожній, кожен файл передається
+     * у функцію індивідуального завантаження.
+     *
+     * @param {FileList|File[]} files Набір файлів для обробки.
+     */
     const handleAndStoreFiles = (files) => {
         if (!files || files.length === 0) return;
         for (const file of files) {

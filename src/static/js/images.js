@@ -1,3 +1,10 @@
+/**
+ * Скрипт сторінки списку зображень.
+ *
+ * Він зчитує локально збережені дані про завантажені файли з localStorage,
+ * будує список із прев'ю та URL
+ * і дозволяє видаляти записи локально та через API сервера.
+ */
 document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('keydown', function (event) {
         if (event.key === 'F5' || event.key === 'Escape') {
@@ -13,6 +20,12 @@ document.addEventListener('DOMContentLoaded', function () {
         uploadRedirectButton.addEventListener('click', () => window.location.href = '/upload');
     }
 
+    /**
+     * Рендерить список збережених файлів на сторінці.
+     *
+     * Якщо записів немає, показує повідомлення-заглушку.
+     * Якщо записи є, створює таблицю з назвами, URL і кнопками видалення.
+     */
     const displayFiles = () => {
         const storedFiles = JSON.parse(localStorage.getItem('uploadedImages')) || [];
         fileListWrapper.innerHTML = '';
@@ -59,6 +72,13 @@ document.addEventListener('DOMContentLoaded', function () {
         addDeleteListeners();
     };
 
+    /**
+     * Підключає обробники до всіх кнопок видалення у списку.
+     *
+     * Після натискання скрипт намагається знайти відповідний запис через API,
+     * видалити його на сервері, прибрати з localStorage
+     * і повторно перемалювати список.
+     */
     const addDeleteListeners = () => {
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', async (event) => {

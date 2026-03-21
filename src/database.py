@@ -1,3 +1,11 @@
+"""
+Модуль для роботи з PostgreSQL.
+
+Інкапсулює створення підключення до бази даних
+і базові операції над таблицею зображень:
+збереження, отримання списку та видалення записів.
+"""
+
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
@@ -7,10 +15,22 @@ load_dotenv()
 
 
 class DatabaseManager:
+    """
+    Клас для взаємодії з PostgreSQL у межах застосунку.
+
+    Зберігає активне з'єднання з базою даних
+    і надає методи для роботи з таблицею `images`.
+    """
     def __init__(self):
+        """
+        Ініціалізує менеджер бази даних без активного підключення.
+        """
         self.connection = None
 
     def connect(self):
+        """
+        Встановлює з'єднання з PostgreSQL на основі змінних середовища.
+        """
         try:
             self.connection = psycopg2.connect(
                 host=os.getenv('DB_HOST'),
@@ -24,11 +44,23 @@ class DatabaseManager:
             print(f"Connection error: {e}")
 
     def disconnect(self):
+        """
+        Закриває активне з'єднання з базою даних, якщо воно існує.
+        """
         if self.connection:
             self.connection.close()
             print("Disconnected from PostgreSQL")
 
     def save_metadata(self, filename, original_name, size, file_type):
+        """
+        Зберігає метадані файлу в таблицю `images`.
+
+        :param filename: унікальне ім'я файлу в системі
+        :param original_name: оригінальне ім'я файлу
+        :param size: розмір файлу в байтах
+        :param file_type: розширення або тип файлу
+        :return: `True`, якщо запис успішно створено, інакше `False`
+        """
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute("""
@@ -42,6 +74,13 @@ class DatabaseManager:
             return False
 
     def get_all_images(self, page=1, per_page=10):
+        """
+        Повертає список зображень із пагінацією та загальну кількість записів.
+
+        :param page: номер сторінки
+        :param per_page: кількість записів на сторінці
+        :return: список зображень і загальна кількість записів
+        """
         try:
             with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 offset = (page - 1) * per_page
@@ -61,6 +100,15 @@ class DatabaseManager:
             return [], 0
 
     def delete_image(self, image_id):
+        """
+        Видаляє запис про зображення з бази даних за його ідентифікатором.
+
+        Перед видаленням метод отримує ім'я файлу,
+        щоб його можна було видалити і з файлової системи.
+
+        :param image_id: ідентифікатор зображення
+        :return: ім'я файлу, якщо запис знайдено, інакше `False`
+        """
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute("SELECT filename FROM images WHERE id = %s", (image_id,))

@@ -1,3 +1,12 @@
+"""
+Скрипт для резервного копіювання PostgreSQL у Docker-середовищі.
+
+Підтримує три основні сценарії:
+- створення SQL-бекапу бази даних
+- перегляд доступних бекапів у локальній директорії
+- відновлення бази даних із вибраного SQL-файлу
+"""
+
 import subprocess
 import sys
 from datetime import datetime
@@ -11,6 +20,13 @@ DB_USER = os.getenv("DB_USER", "postgres")
 
 
 def create_backup():
+    """
+    Створює SQL-бекап бази даних через `pg_dump` усередині Docker-контейнера.
+
+    Функція формує ім'я файлу з часовою міткою, запускає команду
+    `docker exec ... pg_dump`, а потім зберігає результат у папку бекапів.
+    Якщо команда завершується з помилкою, робота скрипта припиняється.
+    """
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     filename = f"backup_{timestamp}.sql"
     filepath = os.path.join(BACKUP_DIR, filename)
@@ -36,6 +52,12 @@ def create_backup():
 
 
 def list_backups():
+    """
+    Виводить список усіх доступних SQL-бекапів у директорії резервних копій.
+
+    Якщо папка не існує або в ній немає жодного `.sql` файлу,
+    користувач отримує відповідне повідомлення.
+    """
     if not os.path.exists(BACKUP_DIR):
         print(f"The directory {BACKUP_DIR} does not exist.")
         return
@@ -54,6 +76,14 @@ def list_backups():
 
 
 def restore_backup(filename):
+    """
+    Відновлює базу даних із вибраного SQL-файлу.
+
+    Функція перевіряє наявність файлу бекапу, читає його вміст
+    і передає SQL-команди в `psql` усередині Docker-контейнера.
+
+    :param filename: ім'я файлу бекапу для відновлення
+    """
     if not filename.endswith('.sql'):
         filename += '.sql'
 
@@ -83,6 +113,14 @@ def restore_backup(filename):
 
 
 def main():
+    """
+    Обробляє аргументи командного рядка та запускає потрібну операцію.
+
+    Підтримуються команди:
+    - `create` для створення бекапу
+    - `list` для перегляду всіх бекапів
+    - `restore` для відновлення з указаного файлу
+    """
     parser = argparse.ArgumentParser(
         description="PostgreSQL database backup script",
         formatter_class=argparse.RawDescriptionHelpFormatter,

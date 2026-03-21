@@ -1,3 +1,12 @@
+"""
+Основний модуль HTTP-сервера для сервісу хостингу зображень.
+
+Модуль містить обробник запитів на базі `http.server`,
+маршрути для HTML-сторінок і API,
+допоміжну логіку для розбору multipart/form-data
+та функцію запуску локального сервера.
+"""
+
 import http.server
 import socketserver
 import os
@@ -12,7 +21,21 @@ db = DatabaseManager()
 
 
 class ImageServerHandler(http.server.BaseHTTPRequestHandler):
+    """
+    Обробник HTTP-запитів для сторінок, API і статичних ресурсів.
+
+    Клас обслуговує три типи маршрутів:
+    HTML-шаблони інтерфейсу, статичні файли фронтенду
+    та JSON-ендпоїнти для роботи із зображеннями.
+    """
     def do_GET(self):
+        """
+        Обробляє GET-запити.
+
+        Залежно від URL повертає HTML-сторінку,
+        статичний ресурс або JSON-відповідь зі списком зображень.
+        Для невідомих маршрутів повертає `404 Not Found`.
+        """
         routes = {
             '/': 'index.html',
             '/upload': 'upload.html',
@@ -30,6 +53,12 @@ class ImageServerHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
+        """
+        Обробляє POST-запити.
+
+        У поточній реалізації підтримується лише маршрут `/upload`,
+        який використовується для завантаження файлів.
+        """
         if self.path == '/upload':
             self.handle_upload()
         else:
@@ -37,6 +66,12 @@ class ImageServerHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_DELETE(self):
+        """
+        Обробляє DELETE-запити.
+
+        Підтримує видалення зображення через маршрут виду
+        `/api/images/{id}`.
+        """
         if self.path.startswith('/api/images/'):
             self.handle_delete_image()
         else:
@@ -44,6 +79,15 @@ class ImageServerHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def handle_upload(self):
+        """
+        Приймає, перевіряє та зберігає завантажене зображення.
+
+        Метод читає тіло multipart/form-data запиту, визначає ім'я файлу,
+        перевіряє розширення й розмір,
+        зберігає файл у локальну директорію
+        та записує його метадані в базу даних.
+        У відповідь повертає JSON із результатом операції.
+        """
         try:
             content_type = self.headers.get('Content-Type', '')
             if not content_type.startswith('multipart/form-data'):
@@ -94,6 +138,13 @@ class ImageServerHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({'success': False, 'error': str(e)}).encode('utf-8'))
 
     def handle_get_images(self):
+        """
+        Повертає список зображень у JSON-форматі з підтримкою пагінації.
+
+        Номер сторінки читається з query-параметра `page`.
+        У відповідь включаються елементи сторінки, їх загальна кількість
+        та номер поточної сторінки.
+        """
         try:
             from urllib.parse import urlparse, parse_qs
             parsed = urlparse(self.path)
@@ -119,6 +170,13 @@ class ImageServerHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({'success': False, 'error': str(e)}).encode('utf-8'))
 
     def handle_delete_image(self):
+        """
+        Видаляє зображення за його ідентифікатором.
+
+        Спочатку метод видаляє запис із бази даних,
+        а якщо запис існував, намагається прибрати і відповідний файл
+        з локальної файлової системи.
+        """
         try:
             image_id = int(self.path.split('/')[-1])
             filename = db.delete_image(image_id)
@@ -148,6 +206,15 @@ class ImageServerHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({'success': False, 'error': str(e)}).encode('utf-8'))
 
     def _extract_filename(self, form_data):
+        """
+        Витягує ім'я файлу з сирого multipart/form-data запиту.
+
+        Метод шукає значення параметра `filename="..."` у текстовому вигляді
+        тіла запиту. Якщо ім'я знайти не вдається, повертається `"unknown"`.
+
+        :param form_data: сирі байти HTTP-запиту
+        :return: ім'я файлу або `"unknown"`, якщо його не вдалося знайти
+        """
         try:
             decoded = form_data.decode('utf-8', errors='ignore')
             match = re.search(r'filename="([^"]+)"', decoded)
@@ -158,6 +225,16 @@ class ImageServerHandler(http.server.BaseHTTPRequestHandler):
         return "unknown"
 
     def _extract_file_bytes(self, form_data):
+        """
+        Витягує байтовий вміст файлу з multipart/form-data запиту.
+
+        Метод вручну розділяє тіло запиту за boundary,
+        знаходить частину з файлом і повертає тільки його вміст
+        без службових заголовків multipart.
+
+        :param form_data: сирі байти HTTP-запиту
+        :return: байтовий вміст файлу або порожній байтовий рядок
+        """
         boundary = form_data.split(b'\r\n')[0]
         parts = form_data.split(boundary)
 
@@ -172,6 +249,13 @@ class ImageServerHandler(http.server.BaseHTTPRequestHandler):
         return b''
 
     def serve_template(self, filename):
+        """
+        Віддає HTML-шаблон із директорії `templates`.
+
+        Якщо файл шаблону не знайдено, повертає відповідь `404`.
+
+        :param filename: ім'я HTML-файлу
+        """
         try:
             template_path = os.path.join(os.path.dirname(__file__), 'templates', filename)
             with open(template_path, 'r', encoding='utf-8') as f:
@@ -185,6 +269,16 @@ class ImageServerHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def serve_static(self, path):
+        """
+        Віддає статичний ресурс із директорії `static`.
+
+        Метод перетворює HTTP-шлях у локальний шлях до файлу,
+        читає ресурс у двійковому режимі
+        та встановлює відповідний `Content-Type`.
+        Якщо файл не існує, повертає `404`.
+
+        :param path: HTTP-шлях до статичного файлу
+        """
         try:
             file_path = path[len('/static/'):]
             static_path = os.path.join(os.path.dirname(__file__), 'static', file_path)
@@ -199,6 +293,15 @@ class ImageServerHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def get_content_type(self, file_path):
+        """
+        Визначає MIME-тип файлу за його розширенням.
+
+        Метод використовується під час віддачі статичних ресурсів,
+        щоб браузер коректно інтерпретував отримані дані.
+
+        :param file_path: шлях або ім'я файлу
+        :return: MIME-тип для HTTP-відповіді
+        """
         if file_path.endswith('.css'):
             return 'text/css'
         elif file_path.endswith('.js'):
@@ -212,6 +315,16 @@ class ImageServerHandler(http.server.BaseHTTPRequestHandler):
 
 
 def run_server(port=8000):
+    """
+    Запускає локальний HTTP-сервер застосунку.
+
+    Порт береться з аргументу функції або зі змінної середовища `PORT`.
+    Перед запуском встановлюється з'єднання з базою даних,
+    а після завершення роботи сервер коректно закриває це з'єднання.
+    Також метод обробляє ситуацію, коли вибраний порт уже зайнятий.
+
+    :param port: порт для запуску сервера
+    """
     port = int(os.environ.get('PORT', port))
     db.connect()
     try:

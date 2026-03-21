@@ -1,3 +1,10 @@
+/**
+ * Скрипт головної сторінки.
+ *
+ * Після завантаження DOM він випадково показує одну hero-картинку,
+ * задає фоновий колір для стартової сторінки
+ * і підключає кнопку переходу на сторінку завантаження.
+ */
 document.addEventListener('DOMContentLoaded', function () {
     const allImgBlocks = document.querySelectorAll('.hero__img');
     if (allImgBlocks.length > 0) {
@@ -11,6 +18,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const showcaseButton = document.querySelector('.header__button-btn');
     if (showcaseButton) {
+        /**
+         * Перенаправляє користувача на сторінку завантаження.
+         */
         showcaseButton.addEventListener('click', function () {
             window.location.href = '/upload';
         });
