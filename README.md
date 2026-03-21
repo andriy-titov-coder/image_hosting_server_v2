@@ -26,7 +26,7 @@ This project combines a minimal Python HTTP server with a small frontend and con
 For the fastest setup, use Docker Compose:
 
 1. Create `.env` from `.env.example`.
-2. Set Docker-friendly values such as `DB_HOST=db` and `DB_PORT=5432`.
+2. Fill in the required variables using your own environment values.
 3. Start the project:
 
 ```bash
@@ -126,12 +126,12 @@ Create a `.env` file based on `.env.example`.
 
 | Variable | Description | Example |
 | --- | --- | --- |
-| `DB_HOST` | PostgreSQL host used by the app | `db` |
-| `DB_NAME` | Database name | `image_hosting` |
-| `DB_USER` | Database user | `postgres` |
-| `DB_PASSWORD` | Database password | `postgres` |
-| `DB_PORT` | PostgreSQL port used by the app | `5432` |
-| `PORT` | HTTP port for the Python app | `8000` |
+| `DB_HOST` | PostgreSQL host used by the app | `<your_db_host>` |
+| `DB_NAME` | Database name | `<your_db_name>` |
+| `DB_USER` | Database user | `<your_db_user>` |
+| `DB_PASSWORD` | Database password | `<your_db_password>` |
+| `DB_PORT` | PostgreSQL port used by the app | `<your_db_port>` |
+| `PORT` | HTTP port for the Python app | `<your_app_port>` |
 | `POSTGRES_DB` | Database name for the PostgreSQL container | `${DB_NAME}` |
 | `POSTGRES_USER` | PostgreSQL container user | `${DB_USER}` |
 | `POSTGRES_PASSWORD` | PostgreSQL container password | `${DB_PASSWORD}` |
@@ -144,15 +144,17 @@ Choose one of the following workflows:
 - Local workflow: Python 3.12 and PostgreSQL
 - Optional: `curl` or Postman for testing API endpoints
 
-Example Docker-friendly `.env`:
+Use `.env.example` as the only template for `.env`.
+
+Template:
 
 ```env
-DB_HOST=db
-DB_NAME=image_hosting
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_PORT=5432
-PORT=8000
+DB_HOST=<enter_your_value>
+DB_NAME=<enter_your_value>
+DB_USER=<enter_your_value>
+DB_PASSWORD=<enter_your_value>
+DB_PORT=<enter_your_value>
+PORT=<enter_your_value>
 
 POSTGRES_DB=${DB_NAME}
 POSTGRES_USER=${DB_USER}
@@ -199,16 +201,7 @@ pip install -r requirements.txt
 
 3. Create a PostgreSQL database manually.
 4. Run the SQL schema from `config/init.sql`.
-5. Configure `.env` for your local database, for example:
-
-```env
-DB_HOST=localhost
-DB_NAME=image_hosting
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_PORT=5432
-PORT=8000
-```
+5. Configure `.env` for your local database using the placeholders from `.env.example`.
 
 6. Start the server:
 
@@ -316,10 +309,12 @@ Optional environment variables for the backup script:
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `BACKUP_DIR` | `./backups` | Directory where dump files are stored |
-| `DB_CONTAINER_NAME` | `group6_image_hosting_server-db-1` | PostgreSQL container name used by `docker exec` |
-| `DB_NAME` | `group6_image_hosting_server_db` | Database name for backup and restore |
-| `DB_USER` | `postgres` | Database user for backup and restore |
+| `BACKUP_DIR` | optional | Directory where dump files are stored |
+| `DB_CONTAINER_NAME` | optional | PostgreSQL container name used by `docker exec` |
+| `DB_NAME` | optional | Database name for backup and restore |
+| `DB_USER` | optional | Database user for backup and restore |
+
+Set these explicitly in your own environment if you do not want to rely on internal fallback values inside the script.
 
 ## Current Limitations
 
